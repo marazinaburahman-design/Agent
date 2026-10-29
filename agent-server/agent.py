@@ -83,7 +83,7 @@ _EMBED_MODEL    = "unsloth/embeddinggemma-300m-GGUF:Q4_0"
 _EMBED_BASE_URL = "http://127.0.0.1:11445/v1"
 
 # ── Wait for embedding server ─────────────────────────────────────────────────
-def _wait_for_embedding_server(max_retries: int = 40, delay: float = 0.5) -> bool:
+def _wait_for_embedding_server(max_retries: int = 12, delay: float = 0.5) -> bool:
     import requests
     for i in range(max_retries):
         try:
@@ -197,8 +197,10 @@ try:
     mem_client = Memory.from_config(mem0_config)
     logger.info(f"[mem0] Ready — collection '{_COLLECTION}' @ {_EMBED_DIMS} dims")
 except Exception as e:
-    logger.critical(f"[mem0] FATAL: Could not initialize Memory client: {e}")
-    sys.exit(1)
+    # Memory is optional: a mem0/Pydantic dependency mismatch or unavailable
+    # embedding endpoint must not prevent the chat/agent API from starting.
+    logger.exception("[mem0] Memory disabled because initialization failed")
+    mem_client = None
 
 # ── Request-Scoped Context Variables ─────────────────────────────────────────
 _current_user_id:    ContextVar[str] = ContextVar('user_id',    default='default_user')
