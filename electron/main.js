@@ -239,10 +239,18 @@ function startLlama() {
             if (settings.model && settings.model !== 'default') {
                 modelName = settings.model;
             }
-            // If model_server points to a remote API, don't start local llama
-            if (settings.model_server &&
+            // Only start the bundled llama.cpp server for the built-in GGUF model.
+            // A local OpenAI-compatible endpoint may be Ollama (e.g. llama3.2:3b),
+            // which already owns port 11434. Do not spawn a second server on that port.
+            const configuredModel = String(settings.model || '').trim();
+            const isOllamaModelTag =
+                configuredModel.includes(':') &&
+                !configuredModel.includes('/') &&
+                configuredModel !== 'default';
+            const isRemoteServer = settings.model_server &&
                 !settings.model_server.includes('127.0.0.1') &&
-                !settings.model_server.includes('localhost')) {
+                !settings.model_server.includes('localhost');
+            if (isRemoteServer || isOllamaModelTag) {
                 useLocal = false;
             }
         } catch (e) {
